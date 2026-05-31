@@ -1,0 +1,25 @@
+# created by virtualenv automatically
+*
+# Сборка Next.js
+.next
+out
+
+.idea
+
+# Зависимости
+node_modules
+
+# Локальные переменные окружения
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+.idea/
