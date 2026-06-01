@@ -10,14 +10,11 @@
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.43.0",
+    "@tailwindcss/postcss": "^4.3.0",
     "next": "15.5.9",
+    "postcss": "^8.5.15",
     "react": "^18",
     "react-dom": "^18",
-    "vite": "^8",
-    "tailwindcss": "^4.2.2",
-    "@tailwindcss/vite": "^4.2.2"
-  },
-  "devDependencies": {
-
+    "tailwindcss": "^4.2.2"
   }
 }

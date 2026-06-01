@@ -1,25 +1,31 @@
 export default function QuestionRenderer({ question, currentAnswer, setCurrentAnswer }) {
 
   // Для шкал Ликерта (likert_5, likert_7)
-  if (question.type.startsWith('likert_')) {
-    return (
-      <div className="flex flex-col gap-2">
-        {Object.entries(question.weights).map(([label, weight]) => (
-          <label key={label} className="flex items-center gap-2 p-2 border rounded cursor-pointer hover:bg-gray-50">
-            <input
-              type="radio"
-              name={question.question_id}
-              value={weight}
-              checked={currentAnswer?.weight === weight}
-              onChange={() => setCurrentAnswer({ value: label, weight: weight })}
-            />
-            {/* Если есть ui_options_reference в JSON, можно подтягивать текстовые лейблы оттуда, иначе выводим цифру */}
-            Оценка: {label}
-          </label>
-        ))}
-      </div>
-    );
-  }
+    if (question.type.startsWith('likert_')) {
+      // Достаем лейблы, если они есть
+      const labels = question.ui_options_reference?.labels || {};
+
+      return (
+        <div className="flex flex-col gap-2">
+          {Object.entries(question.weights).map(([value, weight]) => (
+            <label key={value} className="flex items-center gap-3 p-3 border rounded cursor-pointer hover:bg-gray-50 transition-colors">
+              <input
+                type="radio"
+                name={question.question_id}
+                value={weight}
+                checked={currentAnswer?.weight === weight}
+                onChange={() => setCurrentAnswer({ value: value, weight: weight })}
+                className="w-4 h-4 text-blue-600 focus:ring-blue-500"
+              />
+              <span className="text-gray-700">
+                {/* Если есть текстовая расшифровка — показываем её, иначе просто цифру */}
+                {labels[value] ? <span className="font-medium">{labels[value]}</span> : `Оценка: ${value}`}
+              </span>
+            </label>
+          ))}
+        </div>
+      );
+    }
 
   // Для кастомных опций и single choice
   if (question.type === 'custom_options' || question.type === 'single_choice') {
