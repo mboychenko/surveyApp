@@ -16,7 +16,7 @@ export default async function handler(req, res) {
   // Достаем все его ответы
   const { data: answers, error } = await supabase
     .from('answers')
-    .select('user_id, methodology_id, question_id, answer_data')
+    .select('user_id, methodology_id, question_id, answer_type, answer_data')
     .eq('user_id', user.id);
 
   if (error) return res.status(500).json({ error: error.message });

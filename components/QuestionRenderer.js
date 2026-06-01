@@ -1,4 +1,10 @@
-export default function QuestionRenderer({ question, currentAnswer, setCurrentAnswer }) {
+export default function QuestionRenderer({ question: dbRow, currentAnswer, setCurrentAnswer }) {
+
+  // 1. Вытаскиваем тип ответа из новой колонки (с фолбеком на сырой JSON)
+  const answerType = dbRow.answer_type //|| dbRow.data?.type || '';
+
+  // 2. Переназначаем question на внутренний объект data.
+  const question = dbRow.data || {};
 
   // Общие стили для карточек ответов
   const baseCardClass = "flex items-center gap-4 p-4 min-h-[64px] border-2 rounded-2xl cursor-pointer transition-all w-full text-left bg-white";
@@ -13,7 +19,7 @@ export default function QuestionRenderer({ question, currentAnswer, setCurrentAn
   );
 
   // Для шкал Ликерта (likert_5, likert_6, likert_7)
-  if (question.type.startsWith('likert_')) {
+  if (answerType.startsWith('likert_')) {
     const labels = question.ui_options_reference?.labels || {};
 
     return (
@@ -40,34 +46,38 @@ export default function QuestionRenderer({ question, currentAnswer, setCurrentAn
     );
   }
 
-  // Для кастомных опций и single choice
-  if (question.type === 'custom_options' || question.type === 'single_choice') {
-    return (
-      <div className="flex flex-col gap-3 w-full">
-        {question.options.map((opt, idx) => {
-          const isActive = currentAnswer?.text === opt.label;
-          return (
-            <label key={idx} className={`${baseCardClass} ${isActive ? activeCardClass : inactiveCardClass}`}>
-              <input
-                type="radio"
-                name={question.question_id}
-                className="hidden"
-                checked={isActive}
-                onChange={() => setCurrentAnswer({ text: opt.label, weight: opt.weight || null })}
-              />
-              {renderRadioIndicator(isActive)}
-              <span className={`text-base md:text-lg leading-snug ${isActive ? 'text-blue-900 font-medium' : 'text-gray-700'}`}>
-                {opt.label}
-              </span>
-            </label>
-          );
-        })}
-      </div>
-    );
-  }
+  // single choice
+    if (answerType === 'custom_options' || answerType === 'single_choice') {
+      return (
+        <div className="flex flex-col gap-3 w-full">
+          {question.options.map((opt, idx) => {
+            const isActive = currentAnswer?.text === opt.label;
+            return (
+              <label key={idx} className={`${baseCardClass} ${isActive ? activeCardClass : inactiveCardClass}`}>
+                <input
+                  type="radio"
+                  name={question.question_id}
+                  className="hidden"
+                  checked={isActive}
+                  onChange={() =>
+                      setCurrentAnswer(answerType === 'single_choice'
+                                             ? { text: opt.label }
+                                             : { text: opt.label, weight: opt.weight })
+                  }
+                />
+                {renderRadioIndicator(isActive)}
+                <span className={`text-base md:text-lg leading-snug ${isActive ? 'text-blue-900 font-medium' : 'text-gray-700'}`}>
+                  {opt.label}
+                </span>
+              </label>
+            );
+          })}
+        </div>
+      );
+    }
 
   // Для множественного выбора (multiple_choice)
-  if (question.type === 'multiple_choice') {
+  if (answerType === 'multiple_choice') {
     const handleCheck = (label) => {
       let prevAnswers = currentAnswer?.selection || [];
       if (prevAnswers.includes(label)) {
@@ -117,7 +127,7 @@ export default function QuestionRenderer({ question, currentAnswer, setCurrentAn
   }
 
   // Для свободного текста (free_text)
-  if (question.type === 'free_text') {
+  if (answerType === 'free_text') {
     return (
       <div className="w-full flex flex-col gap-2">
         <textarea

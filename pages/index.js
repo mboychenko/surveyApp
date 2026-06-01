@@ -36,19 +36,27 @@ export default function SurveyApp() {
   };
 
   const handleNext = async () => {
-    if (currentAnswer === null) return;
+      if (currentAnswer === null) return;
 
-    const question = questions[currentQuestionIndex];
-    await supabase.from('answers').upsert({
-      user_id: user.id,
-      question_id: question.id,
-      methodology_id: question.data.methodology || 'unknown',
-      answer_data: currentAnswer
-    }, { onConflict: 'user_id, question_id' });
+      const question = questions[currentQuestionIndex];
 
-    setCurrentAnswer(null);
-    setCurrentQuestionIndex(prev => prev + 1);
-  };
+      const exactMethodologyId = question.methodology
+                              || 'methodology_not_found';
+
+      const exactAnswerType = question.answer_type
+                             || 'unknown_type';
+
+      await supabase.from('answers').upsert({
+        user_id: user.id,
+        question_id: question.id,
+        answer_type: exactAnswerType,
+        methodology_id: exactMethodologyId,
+        answer_data: currentAnswer
+      }, { onConflict: 'user_id, question_id' });
+
+      setCurrentAnswer(null);
+      setCurrentQuestionIndex(prev => prev + 1);
+    };
 
   // Добавлен обработчик "Назад" для удобства
   const handleBack = () => {
@@ -128,7 +136,7 @@ export default function SurveyApp() {
         </div>
 
         <QuestionRenderer
-          question={currentQ.data}
+          question={currentQ}
           currentAnswer={currentAnswer}
           setCurrentAnswer={setCurrentAnswer}
         />
