@@ -2,3 +2,7 @@
 
 @source "../components";
 @source "../pages";
+
+body {
+  background-color: red !important;
+}
