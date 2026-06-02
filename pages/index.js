@@ -7,32 +7,51 @@ const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.
 export default function SurveyApp() {
   const [email, setEmail] = useState('');
   const [user, setUser] = useState(null);
-  
+
   const [questions, setQuestions] = useState([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [currentAnswer, setCurrentAnswer] = useState(null);
+
+  // Добавлено состояние загрузки
+  const [isLoading, setIsLoading] = useState(false);
 
   const handleLogin = async (e) => {
     e.preventDefault();
     if (!email) return;
 
-    let { data: existingUser } = await supabase.from('users').select('*').eq('email', email).single();
-    if (!existingUser) {
-      const { data: newUser } = await supabase.from('users').insert([{ email }]).select().single();
-      existingUser = newUser;
+    setIsLoading(true);
+
+    try {
+      let { data: existingUser } = await supabase.from('users').select('*').eq('email', email).single();
+      if (!existingUser) {
+        const { data: newUser } = await supabase.from('users').insert([{ email }]).select().single();
+        existingUser = newUser;
+      }
+      setUser(existingUser);
+
+
+      await loadProgress(existingUser.id);
+    } catch (error) {
+      console.error('Ошибка входа:', error);
+      setIsLoading(false);
     }
-    setUser(existingUser);
-    loadProgress(existingUser.id);
   };
 
   const loadProgress = async (userId) => {
-    const { data: allQuestions } = await supabase.from('questions').select('*').order('id');
-    const { data: answered } = await supabase.from('answers').select('question_id').eq('user_id', userId);
-    const answeredIds = answered.map(a => a.question_id);
+    try {
+      const { data: allQuestions } = await supabase.from('questions').select('*').order('id');
+      const { data: answered } = await supabase.from('answers').select('question_id').eq('user_id', userId);
 
-    setQuestions(allQuestions);
-    const nextUnansweredIndex = allQuestions.findIndex(q => !answeredIds.includes(q.id));
-    setCurrentQuestionIndex(nextUnansweredIndex !== -1 ? nextUnansweredIndex : allQuestions.length);
+      const answeredIds = answered ? answered.map(a => a.question_id) : [];
+
+      setQuestions(allQuestions || []);
+      const nextUnansweredIndex = (allQuestions || []).findIndex(q => !answeredIds.includes(q.id));
+      setCurrentQuestionIndex(nextUnansweredIndex !== -1 ? nextUnansweredIndex : (allQuestions || []).length);
+    } catch (error) {
+      console.error('Ошибка загрузки прогресса:', error);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleNext = async () => {
@@ -56,7 +75,7 @@ export default function SurveyApp() {
 
       setCurrentAnswer(null);
       setCurrentQuestionIndex(prev => prev + 1);
-    };
+  };
 
   // Добавлен обработчик "Назад" для удобства
   const handleBack = () => {
@@ -67,6 +86,8 @@ export default function SurveyApp() {
   };
 
   // --- РЕНДЕР ---
+
+  // 1. Экран авторизации
   if (!user) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 p-4">
@@ -76,6 +97,7 @@ export default function SurveyApp() {
             <input
               type="email"
               value={email}
+              autoComplete="email"
               onChange={e => setEmail(e.target.value)}
               placeholder="Введите ваш email"
               className="border-2 border-gray-200 p-4 rounded-xl w-full text-lg focus:border-blue-500 outline-none transition-colors"
@@ -87,6 +109,19 @@ export default function SurveyApp() {
     );
   }
 
+  // 2. Экран загрузки (Лоадер)
+  if (isLoading) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 p-4">
+         <div className="flex flex-col items-center justify-center bg-white p-10 rounded-2xl shadow-sm w-full max-w-md text-center">
+           <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mb-4" />
+           <p className="text-gray-500 text-lg">Загрузка данных...</p>
+         </div>
+      </div>
+    );
+  }
+
+  // 3. Экран завершения
   if (currentQuestionIndex >= questions.length) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 p-4">
@@ -98,6 +133,7 @@ export default function SurveyApp() {
     );
   }
 
+  // 4. Основной экран опроса
   const currentQ = questions[currentQuestionIndex];
   // Расчет прогресса
   const progressPercent = Math.round((currentQuestionIndex / questions.length) * 100);
