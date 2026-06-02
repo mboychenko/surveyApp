@@ -33,7 +33,20 @@ export default function QuestionRenderer({ question: dbRow, currentAnswer, setCu
                 name={question.question_id}
                 className="hidden" // Скрываем стандартный инпут
                 checked={isActive}
-                onChange={() => setCurrentAnswer({ value: value, weight: weight })}
+                onChange={() => {
+                            const rawAnswer = {
+                              raw_value: value,
+                              weight: weight
+                            };
+                            if (question.parameter_id != null) {
+                              rawAnswer.parameter_id = question.parameter_id;
+                            }
+                            if (question.facet_id != null) {
+                              rawAnswer.facet_id = question.facet_id;
+                            }
+                            setCurrentAnswer(rawAnswer);
+                        }
+                    }
               />
               {renderRadioIndicator(isActive)}
               <span className={`text-base md:text-lg ${isActive ? 'text-blue-900 font-medium' : 'text-gray-700'}`}>
@@ -51,7 +64,9 @@ export default function QuestionRenderer({ question: dbRow, currentAnswer, setCu
       return (
         <div className="flex flex-col gap-3 w-full">
           {question.options.map((opt, idx) => {
-            const isActive = currentAnswer?.text === opt.label;
+            const isActive = answerType === 'single_choice'
+              ? currentAnswer?.text === opt.label
+              : currentAnswer?.weight === opt.weight;
             return (
               <label key={idx} className={`${baseCardClass} ${isActive ? activeCardClass : inactiveCardClass}`}>
                 <input
@@ -59,10 +74,26 @@ export default function QuestionRenderer({ question: dbRow, currentAnswer, setCu
                   name={question.question_id}
                   className="hidden"
                   checked={isActive}
-                  onChange={() =>
-                      setCurrentAnswer(answerType === 'single_choice'
-                                             ? { text: opt.label }
-                                             : { text: opt.label, weight: opt.weight })
+                  onChange={() => {
+                            const rawAnswer = {};
+                            // Разделяем логику для text и weight
+                              if (answerType === 'single_choice') {
+                                rawAnswer.text = opt.label;
+                              } else {
+                                rawAnswer.weight = opt.weight;
+
+                                if (question.parameter_id != null) {
+                                  rawAnswer.parameter_id = question.parameter_id;
+                                }
+                              }
+
+                              // category_tag добавляется независимо от типа, если он существует
+                              if (question.category_tag != null) {
+                                rawAnswer.category_tag = question.category_tag;
+                              }
+
+                              setCurrentAnswer(rawAnswer);
+                      }
                   }
                 />
                 {renderRadioIndicator(isActive)}
@@ -86,7 +117,12 @@ export default function QuestionRenderer({ question: dbRow, currentAnswer, setCu
         if (question.max_choices && prevAnswers.length >= question.max_choices) return; // Ограничение
         prevAnswers = [...prevAnswers, label];
       }
-      setCurrentAnswer({ selection: prevAnswers });
+
+      const rawAnswer = { selection: prevAnswers };
+      if (question.category_tag != null) {
+          rawAnswer.category_tag = question.category_tag;
+      }
+      setCurrentAnswer(rawAnswer);
     };
 
     return (
@@ -134,7 +170,13 @@ export default function QuestionRenderer({ question: dbRow, currentAnswer, setCu
           className="w-full border-2 border-gray-200 p-5 rounded-2xl min-h-[160px] text-lg text-gray-800 bg-gray-50 focus:bg-white focus:border-blue-600 focus:ring-4 focus:ring-blue-50 outline-none transition-all resize-none"
           placeholder="Напишите ваш ответ здесь..."
           value={currentAnswer?.text || ''}
-          onChange={(e) => setCurrentAnswer({ text: e.target.value })}
+          onChange={(e) => {
+                const rawAnswer = { text: e.target.value };
+                if (question.category_tag != null) {
+                    rawAnswer.category_tag = question.category_tag;
+                }
+                setCurrentAnswer(rawAnswer);
+          }}
         />
         {question.ui_hint && ( // Если в JSON есть ui_hint
           <p className="text-sm text-gray-500 mt-2 px-2 italic">

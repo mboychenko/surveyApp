@@ -20,30 +20,34 @@ def import_questions():
 
     questions_to_insert = []
 
-    # Парсим структуру
     for key, section in schema_data.items():
         methodology = section.get('methodology', key)
         questions = section.get('questions', [])
-        
+
+        ui_options = section.get('ui_options_reference', None)
+
         for q in questions:
+            q_data = dict(q)
+
+            if ui_options:
+                q_data['ui_options_reference'] = ui_options
+
             questions_to_insert.append({
                 "id": q.get('question_id'),
                 "methodology": methodology,
-                "question_type": q.get('type'),
-                "data": q
+                "answer_type": q.get('type'),
+                "data": q_data # Теперь тут лежит вопрос ВМЕСТЕ с лейблами
             })
 
     if not questions_to_insert:
         print("Нет данных для импорта.")
         return
 
-    # Отправляем в Supabase
     try:
-        # upsert обновит запись, если вопрос с таким id уже существует
         response = supabase.table('questions').upsert(questions_to_insert).execute()
         print(f"Успешно импортировано вопросов: {len(questions_to_insert)}")
     except Exception as e:
-        print(f"Ошибка при импорте в Supabase: {e}")
+        print(f"Ошибка при импорте: {e}")
 
 if __name__ == "__main__":
     import_questions()
