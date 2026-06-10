@@ -22,15 +22,14 @@ export default function SurveyApp() {
     setIsLoading(true);
 
     try {
-      let { data: existingUser } = await supabase.from('users').select('*').eq('email', email).single();
-      if (!existingUser) {
-        const { data: newUser } = await supabase.from('users').insert([{ email }]).select().single();
-        existingUser = newUser;
-      }
-      setUser(existingUser);
+      const { data: user, error } = await supabase
+        .rpc('upsert_user_by_email', { input_email: email })
+        .single();
 
+      if (error) throw error;
 
-      await loadProgress(existingUser.id);
+      setUser(user);
+      await loadProgress(user.id);
     } catch (error) {
       console.error('Ошибка входа:', error);
       setIsLoading(false);
@@ -40,7 +39,7 @@ export default function SurveyApp() {
   const loadProgress = async (userId) => {
     try {
       const { data: allQuestions } = await supabase.from('questions').select('*').order('id');
-      const { data: answered } = await supabase.from('answers').select('question_id').eq('user_id', userId);
+      const { data: answered } = await supabase.rpc('get_answers_by_user', { p_user_id: userId });
 
       const answeredIds = answered ? answered.map(a => a.question_id) : [];
 
@@ -65,13 +64,13 @@ export default function SurveyApp() {
       const exactAnswerType = question.answer_type
                              || 'unknown_type';
 
-      await supabase.from('answers').upsert({
-        user_id: user.id,
-        question_id: question.id,
-        answer_type: exactAnswerType,
-        methodology_id: exactMethodologyId,
-        answer_data: currentAnswer
-      }, { onConflict: 'user_id, question_id' });
+      await supabase.rpc('upsert_answer', {
+        p_user_id: user.id,
+        p_question_id: question.id,
+        p_answer_type: exactAnswerType,
+        p_methodology_id: exactMethodologyId,
+        p_answer_data: currentAnswer
+      });
 
       setCurrentAnswer(null);
       setCurrentQuestionIndex(prev => prev + 1);
