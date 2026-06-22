@@ -12,8 +12,11 @@ export default function SurveyApp() {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [currentAnswer, setCurrentAnswer] = useState(null);
 
-  // Добавлено состояние загрузки
   const [isLoading, setIsLoading] = useState(false);
+  // Состояние загрузки для защиты от двойных кликов
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  // Стейт для хранения ID уже отвеченных вопросов
+  const [answeredIds, setAnsweredIds] = useState([]);
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -41,10 +44,12 @@ export default function SurveyApp() {
       const { data: allQuestions } = await supabase.from('questions').select('*').order('id');
       const { data: answered } = await supabase.rpc('get_answers_by_user', { p_user_id: userId });
 
-      const answeredIds = answered ? answered.map(a => a.question_id) : [];
+      // Сохраняем ID отвеченных вопросов в локальный стейт
+      const fetchedAnsweredIds = answered ? answered.map(a => a.question_id) : [];
+      setAnsweredIds(fetchedAnsweredIds);
 
       setQuestions(allQuestions || []);
-      const nextUnansweredIndex = (allQuestions || []).findIndex(q => !answeredIds.includes(q.id));
+      const nextUnansweredIndex = (allQuestions || []).findIndex(q => !fetchedAnsweredIds.includes(q.id));
       setCurrentQuestionIndex(nextUnansweredIndex !== -1 ? nextUnansweredIndex : (allQuestions || []).length);
     } catch (error) {
       console.error('Ошибка загрузки прогресса:', error);
@@ -54,17 +59,17 @@ export default function SurveyApp() {
   };
 
   const handleNext = async () => {
-      if (currentAnswer === null) return;
+      // Блокируем выполнение, если ответ пустой или уже идет сохранение
+      if (currentAnswer === null || isSubmitting) return;
 
+      setIsSubmitting(true);
       const question = questions[currentQuestionIndex];
 
-      const exactMethodologyId = question.methodology
-                              || 'methodology_not_found';
+      const exactMethodologyId = question.methodology || 'methodology_not_found';
+      const exactAnswerType = question.answer_type || 'unknown_type';
 
-      const exactAnswerType = question.answer_type
-                             || 'unknown_type';
-
-      await supabase.rpc('upsert_answer', {
+      // ДОБАВЛЕНО: Получаем объект error из ответа Supabase
+      const { error } = await supabase.rpc('upsert_answer', {
         p_user_id: user.id,
         p_question_id: question.id,
         p_answer_type: exactAnswerType,
@@ -72,14 +77,35 @@ export default function SurveyApp() {
         p_answer_data: currentAnswer
       });
 
+      // Проверка на ошибку сохранения
+      if (error) {
+         console.error('Ошибка при сохранении ответа:', error);
+         alert('Не удалось сохранить ответ. Пожалуйста, попробуйте еще раз.');
+         setIsSubmitting(false);
+         return; // Прерываем выполнение, чтобы не сдвинуть индекс
+      }
+
+      // Обновляем список отвеченных вопросов
+      const newAnsweredIds = [...answeredIds, question.id];
+      setAnsweredIds(newAnsweredIds);
+
       setCurrentAnswer(null);
-      setCurrentQuestionIndex(prev => prev + 1);
+
+      // Ищем следующий неотвеченный вопрос (перепрыгиваем через те, что уже пройдены)
+      setCurrentQuestionIndex(prev => {
+         let nextIdx = prev + 1;
+         while (nextIdx < questions.length && newAnsweredIds.includes(questions[nextIdx].id)) {
+             nextIdx++;
+         }
+         return nextIdx;
+      });
+
+      setIsSubmitting(false);
   };
 
-  // Добавлен обработчик "Назад" для удобства
   const handleBack = () => {
     if (currentQuestionIndex > 0) {
-      setCurrentAnswer(null); // Сбрасываем текущий выбор при возврате
+      setCurrentAnswer(null);
       setCurrentQuestionIndex(prev => prev - 1);
     }
   };
@@ -146,8 +172,8 @@ export default function SurveyApp() {
           <div className="flex justify-between items-center">
             <button
               onClick={handleBack}
-              disabled={currentQuestionIndex === 0}
-              className={`text-sm font-medium ${currentQuestionIndex === 0 ? 'text-gray-300' : 'text-blue-600'}`}
+              disabled={currentQuestionIndex === 0 || isSubmitting}
+              className={`text-sm font-medium ${currentQuestionIndex === 0 || isSubmitting ? 'text-gray-300 cursor-not-allowed' : 'text-blue-600'}`}
             >
               ← Назад
             </button>
@@ -182,10 +208,10 @@ export default function SurveyApp() {
         <div className="max-w-2xl mx-auto">
           <button
             onClick={handleNext}
-            disabled={currentAnswer === null}
+            disabled={currentAnswer === null || isSubmitting}
             className="w-full bg-blue-600 text-white font-semibold text-lg py-4 px-6 rounded-2xl disabled:opacity-40 disabled:bg-gray-400 transition-all active:scale-[0.98]"
           >
-            Далее
+            {isSubmitting ? 'Сохранение...' : 'Далее'}
           </button>
         </div>
       </footer>
