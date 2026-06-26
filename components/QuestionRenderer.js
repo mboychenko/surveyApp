@@ -1,7 +1,7 @@
-export default function QuestionRenderer({ question: dbRow, currentAnswer, setCurrentAnswer }) {
+export default function QuestionRenderer({ question: dbRow, currentAnswer, setCurrentAnswer, lang = 'ru' }) {
 
-  // 1. Вытаскиваем тип ответа из новой колонки (с фолбеком на сырой JSON)
-  const answerType = dbRow.answer_type //|| dbRow.data?.type || '';
+  // 1. Вытаскиваем тип ответа из новой колонки
+  const answerType = dbRow.answer_type;
 
   // 2. Переназначаем question на внутренний объект data.
   const question = dbRow.data || {};
@@ -18,6 +18,15 @@ export default function QuestionRenderer({ question: dbRow, currentAnswer, setCu
     </div>
   );
 
+  // Вспомогательная функция для безопасного получения текста в зависимости от языка
+  const getLangText = (field) => {
+    if (!field) return '';
+    if (typeof field === 'object') {
+      return field[lang] || field['ru'] || '';
+    }
+    return field; // Фолбек, если это уже строка
+  };
+
   // Для шкал Ликерта (likert_5, likert_6, likert_7)
   if (answerType.startsWith('likert_')) {
     const labels = question.ui_options_reference?.labels || {};
@@ -26,31 +35,35 @@ export default function QuestionRenderer({ question: dbRow, currentAnswer, setCu
       <div className="flex flex-col gap-3 w-full">
         {Object.entries(question.weights).map(([value, weight]) => {
           const isActive = currentAnswer?.weight === weight;
+
+          // Извлекаем текст лейбла для текущей оценки
+          const labelObj = labels[value];
+          const labelText = labelObj ? getLangText(labelObj) : `${lang === 'es' ? 'Evaluación' : 'Оценка'}: ${value}`;
+
           return (
             <label key={value} className={`${baseCardClass} ${isActive ? activeCardClass : inactiveCardClass}`}>
               <input
                 type="radio"
                 name={question.question_id}
-                className="hidden" // Скрываем стандартный инпут
+                className="hidden"
                 checked={isActive}
                 onChange={() => {
-                            const rawAnswer = {
-                              raw_value: value,
-                              weight: weight
-                            };
-                            if (question.parameter_id != null) {
-                              rawAnswer.parameter_id = question.parameter_id;
-                            }
-                            if (question.facet_id != null) {
-                              rawAnswer.facet_id = question.facet_id;
-                            }
-                            setCurrentAnswer(rawAnswer);
-                        }
-                    }
+                  const rawAnswer = {
+                    raw_value: value,
+                    weight: weight
+                  };
+                  if (question.parameter_id != null) {
+                    rawAnswer.parameter_id = question.parameter_id;
+                  }
+                  if (question.facet_id != null) {
+                    rawAnswer.facet_id = question.facet_id;
+                  }
+                  setCurrentAnswer(rawAnswer);
+                }}
               />
               {renderRadioIndicator(isActive)}
               <span className={`text-base md:text-lg ${isActive ? 'text-blue-900 font-medium' : 'text-gray-700'}`}>
-                {labels[value] ? labels[value] : `Оценка: ${value}`}
+                {labelText}
               </span>
             </label>
           );
@@ -59,92 +72,99 @@ export default function QuestionRenderer({ question: dbRow, currentAnswer, setCu
     );
   }
 
-  // single choice
-    if (answerType === 'custom_options' || answerType === 'single_choice') {
-      return (
-        <div className="flex flex-col gap-3 w-full">
-          {question.options.map((opt, idx) => {
-            const isActive = answerType === 'single_choice'
-              ? currentAnswer?.text === opt.label
-              : currentAnswer?.weight === opt.weight;
-            return (
-              <label key={idx} className={`${baseCardClass} ${isActive ? activeCardClass : inactiveCardClass}`}>
-                <input
-                  type="radio"
-                  name={question.question_id}
-                  className="hidden"
-                  checked={isActive}
-                  onChange={() => {
-                            const rawAnswer = {};
-                            // Разделяем логику для text и weight
-                              if (answerType === 'single_choice') {
-                                rawAnswer.text = opt.label;
-                              } else {
-                                rawAnswer.weight = opt.weight;
+  // single choice & custom_options
+  if (answerType === 'custom_options' || answerType === 'single_choice') {
+    return (
+      <div className="flex flex-col gap-3 w-full">
+        {question.options.map((opt, idx) => {
+          // Стабильный ключ для сохранения в БД (всегда ru)
+          const stableKey = typeof opt.label === 'object' ? (opt.label['ru'] || '') : opt.label;
+          // Текст для отображения пользователю на выбранном языке
+          const displayLabel = getLangText(opt.label);
 
-                                if (question.parameter_id != null) {
-                                  rawAnswer.parameter_id = question.parameter_id;
-                                }
-                              }
+          const isActive = answerType === 'single_choice'
+            ? currentAnswer?.text === stableKey
+            : currentAnswer?.weight === opt.weight;
 
-                              // category_tag добавляется независимо от типа, если он существует
-                              if (question.category_tag != null) {
-                                rawAnswer.category_tag = question.category_tag;
-                              }
-
-                              setCurrentAnswer(rawAnswer);
-                      }
+          return (
+            <label key={idx} className={`${baseCardClass} ${isActive ? activeCardClass : inactiveCardClass}`}>
+              <input
+                type="radio"
+                name={question.question_id}
+                className="hidden"
+                checked={isActive}
+                onChange={() => {
+                  const rawAnswer = {};
+                  if (answerType === 'single_choice') {
+                    rawAnswer.text = stableKey; // Сохраняем стабильный ru-текст
+                  } else {
+                    rawAnswer.weight = opt.weight;
+                    if (question.parameter_id != null) {
+                      rawAnswer.parameter_id = question.parameter_id;
+                    }
                   }
-                />
-                {renderRadioIndicator(isActive)}
-                <span className={`text-base md:text-lg leading-snug ${isActive ? 'text-blue-900 font-medium' : 'text-gray-700'}`}>
-                  {opt.label}
-                </span>
-              </label>
-            );
-          })}
-        </div>
-      );
-    }
+
+                  if (question.category_tag != null) {
+                    rawAnswer.category_tag = question.category_tag;
+                  }
+
+                  setCurrentAnswer(rawAnswer);
+                }}
+              />
+              {renderRadioIndicator(isActive)}
+              <span className={`text-base md:text-lg leading-snug ${isActive ? 'text-blue-900 font-medium' : 'text-gray-700'}`}>
+                {displayLabel}
+              </span>
+            </label>
+          );
+        })}
+      </div>
+    );
+  }
 
   // Для множественного выбора (multiple_choice)
   if (answerType === 'multiple_choice') {
-    const handleCheck = (label) => {
+    const handleCheck = (opt) => {
+      const stableKey = typeof opt.label === 'object' ? (opt.label['ru'] || '') : opt.label;
       let prevAnswers = currentAnswer?.selection || [];
-      if (prevAnswers.includes(label)) {
-        prevAnswers = prevAnswers.filter(a => a !== label); // Убираем галочку
+
+      if (prevAnswers.includes(stableKey)) {
+        prevAnswers = prevAnswers.filter(a => a !== stableKey);
       } else {
-        if (question.max_choices && prevAnswers.length >= question.max_choices) return; // Ограничение
-        prevAnswers = [...prevAnswers, label];
+        if (question.max_choices && prevAnswers.length >= question.max_choices) return;
+        prevAnswers = [...prevAnswers, stableKey];
       }
 
       const rawAnswer = { selection: prevAnswers };
       if (question.category_tag != null) {
-          rawAnswer.category_tag = question.category_tag;
+        rawAnswer.category_tag = question.category_tag;
       }
       setCurrentAnswer(rawAnswer);
     };
 
     return (
       <div className="flex flex-col gap-3 w-full">
-        {/* Подсказка для пользователя (например, "Выберите от 1 до 3 вариантов") */}
         {(question.min_choices || question.max_choices) && (
           <p className="text-sm text-gray-500 mb-2 text-center">
-            {question.max_choices ? `Можно выбрать до ${question.max_choices} вариантов` : 'Выберите несколько вариантов'}
+            {question.max_choices
+              ? (lang === 'es' ? `Puede elegir hasta ${question.max_choices} opciones` : `Можно выбрать до ${question.max_choices} вариантов`)
+              : (lang === 'es' ? 'Seleccione varias opciones' : 'Выберите несколько вариантов')}
           </p>
         )}
 
         {question.options.map((opt, idx) => {
-          const isChecked = currentAnswer?.selection?.includes(opt.label) || false;
+          const stableKey = typeof opt.label === 'object' ? (opt.label['ru'] || '') : opt.label;
+          const displayLabel = getLangText(opt.label);
+          const isChecked = currentAnswer?.selection?.includes(stableKey) || false;
+
           return (
             <label key={idx} className={`${baseCardClass} ${isChecked ? activeCardClass : inactiveCardClass}`}>
               <input
                 type="checkbox"
                 className="hidden"
                 checked={isChecked}
-                onChange={() => handleCheck(opt.label)}
+                onChange={() => handleCheck(opt)}
               />
-              {/* Кастомный UI для чекбокса (квадрат) */}
               <div className={`w-6 h-6 rounded border-2 flex flex-shrink-0 items-center justify-center transition-colors ${isChecked ? 'bg-blue-600 border-blue-600' : 'border-gray-300'}`}>
                 {isChecked && (
                   <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -153,7 +173,7 @@ export default function QuestionRenderer({ question: dbRow, currentAnswer, setCu
                 )}
               </div>
               <span className={`text-base md:text-lg leading-snug ${isChecked ? 'text-blue-900 font-medium' : 'text-gray-700'}`}>
-                {opt.label}
+                {displayLabel}
               </span>
             </label>
           );
@@ -164,28 +184,31 @@ export default function QuestionRenderer({ question: dbRow, currentAnswer, setCu
 
   // Для свободного текста (free_text)
   if (answerType === 'free_text') {
+    const uiHintText = getLangText(question.ui_hint);
+    const placeholderText = lang === 'es' ? "Escriba su respuesta aquí..." : "Напишите ваш ответ здесь...";
+
     return (
       <div className="w-full flex flex-col gap-2">
         <textarea
           className="w-full border-2 border-gray-200 p-5 rounded-2xl min-h-[160px] text-lg text-gray-800 bg-gray-50 focus:bg-white focus:border-blue-600 focus:ring-4 focus:ring-blue-50 outline-none transition-all resize-none"
-          placeholder="Напишите ваш ответ здесь..."
+          placeholder={placeholderText}
           value={currentAnswer?.text || ''}
           onChange={(e) => {
-                const rawAnswer = { text: e.target.value };
-                if (question.category_tag != null) {
-                    rawAnswer.category_tag = question.category_tag;
-                }
-                setCurrentAnswer(rawAnswer);
+            const rawAnswer = { text: e.target.value };
+            if (question.category_tag != null) {
+              rawAnswer.category_tag = question.category_tag;
+            }
+            setCurrentAnswer(rawAnswer);
           }}
         />
-        {question.ui_hint && ( // Если в JSON есть ui_hint
+        {uiHintText && (
           <p className="text-sm text-gray-500 mt-2 px-2 italic">
-            💡 {question.ui_hint}
+            💡 {uiHintText}
           </p>
         )}
       </div>
     );
   }
 
-  return <div className="text-red-500 p-4 border border-red-200 rounded">Неизвестный тип вопроса</div>;
+  return <div className="text-red-500 p-4 border border-red-200 rounded">Неизвестный тип вопроса / Tipo de pregunta desconocido</div>;
 }
