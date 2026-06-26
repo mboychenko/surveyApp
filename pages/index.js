@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import QuestionRenderer from '../components/QuestionRenderer';
 
-const supabase = createClient("https://reluzwoacwmuaduildbn.supabase.co", "sb_publishable_pCrjNS04xHJ78U_hBSy3qw_PezyLW5E");
+const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
 
 export default function SurveyApp() {
   const [email, setEmail] = useState('');
