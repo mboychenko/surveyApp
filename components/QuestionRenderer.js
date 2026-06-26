@@ -77,8 +77,8 @@ export default function QuestionRenderer({ question: dbRow, currentAnswer, setCu
     return (
       <div className="flex flex-col gap-3 w-full">
         {question.options.map((opt, idx) => {
-          // Стабильный ключ для сохранения в БД (всегда ru)
-          const stableKey = typeof opt.label === 'object' ? (opt.label['ru'] || '') : opt.label;
+          // Стабильный ключ для сохранения в БД (всегда en)
+          const stableKey = typeof opt.label === 'object' ? (opt.label['en'] || '') : opt.label;
           // Текст для отображения пользователю на выбранном языке
           const displayLabel = getLangText(opt.label);
 
@@ -125,7 +125,7 @@ export default function QuestionRenderer({ question: dbRow, currentAnswer, setCu
   // Для множественного выбора (multiple_choice)
   if (answerType === 'multiple_choice') {
     const handleCheck = (opt) => {
-      const stableKey = typeof opt.label === 'object' ? (opt.label['ru'] || '') : opt.label;
+      const stableKey = typeof opt.label === 'object' ? (opt.label['en'] || '') : opt.label;
       let prevAnswers = currentAnswer?.selection || [];
 
       if (prevAnswers.includes(stableKey)) {
@@ -153,7 +153,7 @@ export default function QuestionRenderer({ question: dbRow, currentAnswer, setCu
         )}
 
         {question.options.map((opt, idx) => {
-          const stableKey = typeof opt.label === 'object' ? (opt.label['ru'] || '') : opt.label;
+          const stableKey = typeof opt.label === 'object' ? (opt.label['en'] || '') : opt.label;
           const displayLabel = getLangText(opt.label);
           const isChecked = currentAnswer?.selection?.includes(stableKey) || false;
 

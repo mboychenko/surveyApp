@@ -112,7 +112,7 @@ export default function SurveyApp() {
       <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 p-4">
         <div className="bg-white p-8 rounded-2xl shadow-sm w-full max-w-md text-center">
           <h2 className="text-2xl font-bold mb-6 text-gray-800">
-            {lang === 'es' ? 'Iniciar sesión' : 'Вход в систему'}
+            {lang === 'es' ? 'Iniciar sesión' : lang === 'en' ? 'Log in' : 'Вход в систему'}
           </h2>
           <form onSubmit={handleLogin} className="flex flex-col gap-4">
             <input
@@ -120,20 +120,21 @@ export default function SurveyApp() {
               value={email}
               autoComplete="email"
               onChange={e => setEmail(e.target.value)}
-              placeholder={lang === 'es' ? 'Introduzca su email' : 'Введите ваш email'}
+              placeholder={lang === 'es' ? 'Introduzca su email' : lang === 'en' ? 'Enter your email' : 'Введите ваш email'}
               className="border-2 border-gray-200 p-4 rounded-xl w-full text-lg focus:border-blue-500 outline-none transition-colors"
             />
             <button type="submit" className="bg-blue-600 text-white font-medium p-4 rounded-xl text-lg hover:bg-blue-700 transition-colors">
-              {lang === 'es' ? 'Comenzar encuesta' : 'Начать опрос'}
+              {lang === 'es' ? 'Comenzar encuesta' : lang === 'en' ? 'Start survey' : 'Начать опрос'}
             </button>
           </form>
 
           {/* Переключатель языка на экране логина */}
-          <div className="flex gap-3 text-xs font-bold bg-gray-100 p-1 rounded-lg">
-            <button onClick={() => setLang('ru')} className={`px-2 py-1 rounded-md transition-colors ${lang === 'ru' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-400'}`}>RU</button>
-            <button onClick={() => setLang('es')} className={`px-2 py-1 rounded-md transition-colors ${lang === 'es' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-400'}`}>ES</button>
-            <button onClick={() => setLang('en')} className={`px-2 py-1 rounded-md transition-colors ${lang === 'en' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-400'}`}>EN</button>
+          <div className="flex justify-center gap-4 mt-6 text-sm font-semibold">
+            <button onClick={() => setLang('ru')} className={`pb-1 border-b-2 ${lang === 'ru' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-400'}`}>RU</button>
+            <button onClick={() => setLang('es')} className={`pb-1 border-b-2 ${lang === 'es' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-400'}`}>ES</button>
+            <button onClick={() => setLang('en')} className={`pb-1 border-b-2 ${lang === 'en' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-400'}`}>EN</button>
           </div>
+
         </div>
       </div>
     );
@@ -197,6 +198,7 @@ export default function SurveyApp() {
             <div className="flex gap-3 text-xs font-bold bg-gray-100 p-1 rounded-lg">
               <button onClick={() => setLang('ru')} className={`px-2 py-1 rounded-md transition-colors ${lang === 'ru' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-400'}`}>RU</button>
               <button onClick={() => setLang('es')} className={`px-2 py-1 rounded-md transition-colors ${lang === 'es' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-400'}`}>ES</button>
+              <button onClick={() => setLang('en')} className={`px-2 py-1 rounded-md transition-colors ${lang === 'en' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-400'}`}>EN</button>
             </div>
 
             <span className="text-sm font-bold text-gray-400">{progressPercent}%</span>
