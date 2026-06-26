@@ -129,9 +129,10 @@ export default function SurveyApp() {
           </form>
 
           {/* Переключатель языка на экране логина */}
-          <div className="flex justify-center gap-4 mt-6 text-sm font-semibold">
-            <button onClick={() => setLang('ru')} className={`pb-1 border-b-2 ${lang === 'ru' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-400'}`}>RU</button>
-            <button onClick={() => setLang('es')} className={`pb-1 border-b-2 ${lang === 'es' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-400'}`}>ES</button>
+          <div className="flex gap-3 text-xs font-bold bg-gray-100 p-1 rounded-lg">
+            <button onClick={() => setLang('ru')} className={`px-2 py-1 rounded-md transition-colors ${lang === 'ru' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-400'}`}>RU</button>
+            <button onClick={() => setLang('es')} className={`px-2 py-1 rounded-md transition-colors ${lang === 'es' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-400'}`}>ES</button>
+            <button onClick={() => setLang('en')} className={`px-2 py-1 rounded-md transition-colors ${lang === 'en' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-400'}`}>EN</button>
           </div>
         </div>
       </div>
@@ -189,7 +190,7 @@ export default function SurveyApp() {
               disabled={currentQuestionIndex === 0 || isSubmitting}
               className={`text-sm font-medium ${currentQuestionIndex === 0 || isSubmitting ? 'text-gray-300 cursor-not-allowed' : 'text-blue-600'}`}
             >
-              {lang === 'es' ? '← Volver' : '← Назад'}
+              {lang === 'es' ? '← Volver' : lang === 'en' ? '← Back' : '← Назад'}
             </button>
 
             {/* Переключатель языка "на лету" */}
@@ -234,8 +235,8 @@ export default function SurveyApp() {
             className="w-full bg-blue-600 text-white font-semibold text-lg py-4 px-6 rounded-2xl disabled:opacity-40 disabled:bg-gray-400 transition-all active:scale-[0.98]"
           >
             {isSubmitting
-              ? (lang === 'es' ? 'Guardando...' : 'Сохранение...')
-              : (lang === 'es' ? 'Siguiente' : 'Далее')}
+              ? (lang === 'es' ? 'Guardando...' : lang === 'en' ? 'Saving...' : 'Сохранение...')
+              : (lang === 'es' ? 'Siguiente' : lang === 'en' ? 'Next' : 'Далее')}
           </button>
         </div>
       </footer>

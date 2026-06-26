@@ -38,7 +38,7 @@ export default function QuestionRenderer({ question: dbRow, currentAnswer, setCu
 
           // Извлекаем текст лейбла для текущей оценки
           const labelObj = labels[value];
-          const labelText = labelObj ? getLangText(labelObj) : `${lang === 'es' ? 'Evaluación' : 'Оценка'}: ${value}`;
+          const labelText = labelObj ? getLangText(labelObj) : `${lang === 'es' ? 'Evaluación' : lang === 'en' ? 'Evaluation' : 'Оценка'}: ${value}`;
 
           return (
             <label key={value} className={`${baseCardClass} ${isActive ? activeCardClass : inactiveCardClass}`}>
@@ -147,8 +147,8 @@ export default function QuestionRenderer({ question: dbRow, currentAnswer, setCu
         {(question.min_choices || question.max_choices) && (
           <p className="text-sm text-gray-500 mb-2 text-center">
             {question.max_choices
-              ? (lang === 'es' ? `Puede elegir hasta ${question.max_choices} opciones` : `Можно выбрать до ${question.max_choices} вариантов`)
-              : (lang === 'es' ? 'Seleccione varias opciones' : 'Выберите несколько вариантов')}
+              ? (lang === 'es' ? `Puede elegir hasta ${question.max_choices} opciones` : lang === 'en' ? `You can select up to ${question.max_choices} options` : `Можно выбрать до ${question.max_choices} вариантов`)
+                : (lang === 'es' ? 'Seleccione varias opciones' : lang === 'en' ? 'Select multiple options' : 'Выберите несколько вариантов')}
           </p>
         )}
 
@@ -185,7 +185,7 @@ export default function QuestionRenderer({ question: dbRow, currentAnswer, setCu
   // Для свободного текста (free_text)
   if (answerType === 'free_text') {
     const uiHintText = getLangText(question.ui_hint);
-    const placeholderText = lang === 'es' ? "Escriba su respuesta aquí..." : "Напишите ваш ответ здесь...";
+    const placeholderText = lang === 'es' ? "Escriba su respuesta aquí..." : lang === 'en' ? "Type your answer here..." : "Напишите ваш ответ здесь...";
 
     return (
       <div className="w-full flex flex-col gap-2">
