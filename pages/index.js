@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import QuestionRenderer from '../components/QuestionRenderer';
+import { uiDict } from '../scripts/translations';
 
 const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
 
@@ -77,7 +78,7 @@ export default function SurveyApp() {
 
       if (error) {
          console.error('Ошибка при сохранении ответа:', error);
-         alert(lang === 'es' ? 'No se pudo guardar la respuesta. Por favor, inténtelo de nuevo.' : 'Не удалось сохранить ответ. Пожалуйста, попробуйте еще раз.');
+         alert(uiDict.saveError[lang]);
          setIsSubmitting(false);
          return;
       }
@@ -112,7 +113,7 @@ export default function SurveyApp() {
       <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 p-4">
         <div className="bg-white p-8 rounded-2xl shadow-sm w-full max-w-md text-center">
           <h2 className="text-2xl font-bold mb-6 text-gray-800">
-            {lang === 'es' ? 'Iniciar sesión' : lang === 'en' ? 'Log in' : 'Вход в систему'}
+            {uiDict.loginTitle[lang]}
           </h2>
           <form onSubmit={handleLogin} className="flex flex-col gap-4">
             <input
@@ -120,11 +121,11 @@ export default function SurveyApp() {
               value={email}
               autoComplete="email"
               onChange={e => setEmail(e.target.value)}
-              placeholder={lang === 'es' ? 'Introduzca su email' : lang === 'en' ? 'Enter your email' : 'Введите ваш email'}
+              placeholder={uiDict.emailPlaceholder[lang]}
               className="border-2 border-gray-200 p-4 rounded-xl w-full text-lg focus:border-blue-500 outline-none transition-colors"
             />
             <button type="submit" className="bg-blue-600 text-white font-medium p-4 rounded-xl text-lg hover:bg-blue-700 transition-colors">
-              {lang === 'es' ? 'Comenzar encuesta' : lang === 'en' ? 'Start survey' : 'Начать опрос'}
+              {uiDict.startSurvey[lang]}
             </button>
           </form>
 
@@ -133,6 +134,8 @@ export default function SurveyApp() {
             <button onClick={() => setLang('ru')} className={`pb-1 border-b-2 ${lang === 'ru' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-400'}`}>RU</button>
             <button onClick={() => setLang('es')} className={`pb-1 border-b-2 ${lang === 'es' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-400'}`}>ES</button>
             <button onClick={() => setLang('en')} className={`pb-1 border-b-2 ${lang === 'en' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-400'}`}>EN</button>
+            <button onClick={() => setLang('zh')} className={`pb-1 border-b-2 ${lang === 'zh' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-400'}`}>ZH</button>
+            <button onClick={() => setLang('hi')} className={`pb-1 border-b-2 ${lang === 'hi' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-400'}`}>HI</button>
           </div>
 
         </div>
@@ -147,7 +150,7 @@ export default function SurveyApp() {
          <div className="flex flex-col items-center justify-center bg-white p-10 rounded-2xl shadow-sm w-full max-w-md text-center">
            <div className="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mb-4" />
            <p className="text-gray-500 text-lg">
-             {lang === 'es' ? 'Cargando datos...' : 'Загрузка данных...'}
+             {uiDict.loading[lang]}
            </p>
          </div>
       </div>
@@ -160,10 +163,10 @@ export default function SurveyApp() {
       <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 p-4">
          <div className="text-center bg-white p-10 rounded-2xl shadow-sm">
            <h2 className="text-3xl font-bold text-gray-800 mb-2">
-             {lang === 'es' ? '¡Encuesta completada!' : 'Опрос завершен!'}
+             {uiDict.surveyDone[lang]}
            </h2>
            <p className="text-gray-500 text-lg">
-             {lang === 'es' ? 'Gracias por sus respuestas.' : 'Спасибо за ваши ответы.'}
+             {uiDict.thanks[lang]}
            </p>
          </div>
       </div>
@@ -191,7 +194,7 @@ export default function SurveyApp() {
               disabled={currentQuestionIndex === 0 || isSubmitting}
               className={`text-sm font-medium ${currentQuestionIndex === 0 || isSubmitting ? 'text-gray-300 cursor-not-allowed' : 'text-blue-600'}`}
             >
-              {lang === 'es' ? '← Volver' : lang === 'en' ? '← Back' : '← Назад'}
+              {uiDict.backBtn[lang]}
             </button>
 
             {/* Переключатель языка "на лету" */}
@@ -199,6 +202,8 @@ export default function SurveyApp() {
               <button onClick={() => setLang('ru')} className={`px-2 py-1 rounded-md transition-colors ${lang === 'ru' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-400'}`}>RU</button>
               <button onClick={() => setLang('es')} className={`px-2 py-1 rounded-md transition-colors ${lang === 'es' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-400'}`}>ES</button>
               <button onClick={() => setLang('en')} className={`px-2 py-1 rounded-md transition-colors ${lang === 'en' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-400'}`}>EN</button>
+              <button onClick={() => setLang('zh')} className={`px-2 py-1 rounded-md transition-colors ${lang === 'zh' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-400'}`}>ZH</button>
+              <button onClick={() => setLang('hi')} className={`px-2 py-1 rounded-md transition-colors ${lang === 'hi' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-400'}`}>HI</button>
             </div>
 
             <span className="text-sm font-bold text-gray-400">{progressPercent}%</span>
@@ -237,8 +242,9 @@ export default function SurveyApp() {
             className="w-full bg-blue-600 text-white font-semibold text-lg py-4 px-6 rounded-2xl disabled:opacity-40 disabled:bg-gray-400 transition-all active:scale-[0.98]"
           >
             {isSubmitting
-              ? (lang === 'es' ? 'Guardando...' : lang === 'en' ? 'Saving...' : 'Сохранение...')
-              : (lang === 'es' ? 'Siguiente' : lang === 'en' ? 'Next' : 'Далее')}
+              ? uiDict.savingBtn[lang]
+              : uiDict.nextBtn[lang]
+              }
           </button>
         </div>
       </footer>

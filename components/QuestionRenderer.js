@@ -1,3 +1,5 @@
+import { rendererDict } from '../scripts/translations';
+
 export default function QuestionRenderer({ question: dbRow, currentAnswer, setCurrentAnswer, lang = 'ru' }) {
 
   // 1. Вытаскиваем тип ответа из новой колонки
@@ -38,7 +40,7 @@ export default function QuestionRenderer({ question: dbRow, currentAnswer, setCu
 
           // Извлекаем текст лейбла для текущей оценки
           const labelObj = labels[value];
-          const labelText = labelObj ? getLangText(labelObj) : `${lang === 'es' ? 'Evaluación' : lang === 'en' ? 'Evaluation' : 'Оценка'}: ${value}`;
+          const labelText = labelObj ? getLangText(labelObj) : `${rendererDict.evaluation[lang]}: ${value}`;
 
           return (
             <label key={value} className={`${baseCardClass} ${isActive ? activeCardClass : inactiveCardClass}`}>
@@ -147,8 +149,8 @@ export default function QuestionRenderer({ question: dbRow, currentAnswer, setCu
         {(question.min_choices || question.max_choices) && (
           <p className="text-sm text-gray-500 mb-2 text-center">
             {question.max_choices
-              ? (lang === 'es' ? `Puede elegir hasta ${question.max_choices} opciones` : lang === 'en' ? `You can select up to ${question.max_choices} options` : `Можно выбрать до ${question.max_choices} вариантов`)
-                : (lang === 'es' ? 'Seleccione varias opciones' : lang === 'en' ? 'Select multiple options' : 'Выберите несколько вариантов')}
+              ? rendererDict.selectUpTo[lang](question.max_choices)
+              : rendererDict.selectMultiple[lang]}
           </p>
         )}
 
@@ -185,7 +187,7 @@ export default function QuestionRenderer({ question: dbRow, currentAnswer, setCu
   // Для свободного текста (free_text)
   if (answerType === 'free_text') {
     const uiHintText = getLangText(question.ui_hint);
-    const placeholderText = lang === 'es' ? "Escriba su respuesta aquí..." : lang === 'en' ? "Type your answer here..." : "Напишите ваш ответ здесь...";
+    const placeholderText = rendererDict.placeholder[lang];
 
     return (
       <div className="w-full flex flex-col gap-2">
@@ -210,5 +212,5 @@ export default function QuestionRenderer({ question: dbRow, currentAnswer, setCu
     );
   }
 
-  return <div className="text-red-500 p-4 border border-red-200 rounded">Неизвестный тип вопроса / Tipo de pregunta desconocido</div>;
+  return <div className="text-red-500 p-4 border border-red-200 rounded">{rendererDict.unknownType[lang]}</div>;
 }
