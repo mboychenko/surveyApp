@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useRouter } from 'next/router';
 import { createClient } from '@supabase/supabase-js';
 import QuestionRenderer from '../components/QuestionRenderer';
 import { uiDict } from '../scripts/translations';
@@ -6,40 +7,60 @@ import { uiDict } from '../scripts/translations';
 const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
 
 export default function SurveyApp() {
-  const [email, setEmail] = useState('');
+  const router = useRouter();
+
   const [user, setUser] = useState(null);
+  const [authError, setAuthError] = useState(null);
 
-  // Стейт для активного языка ('ru' или 'es')
   const [lang, setLang] = useState('ru');
-
   const [questions, setQuestions] = useState([]);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [currentAnswer, setCurrentAnswer] = useState(null);
 
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [answeredIds, setAnsweredIds] = useState([]);
 
-  const handleLogin = async (e) => {
-    e.preventDefault();
-    if (!email) return;
+  // --- ЛОГИКА АВТОРИЗАЦИИ ---
 
+  useEffect(() => {
+    if (!router.isReady) return;
+
+    const token = router.query.token;
+
+    if (token) {
+      authenticateWithToken(token);
+    } else {
+      setIsLoading(false);
+      setAuthError('Access denied. Please, use your personal link.');
+    }
+  }, [router.isReady, router.query.token]);
+
+  const authenticateWithToken = async (token) => {
     setIsLoading(true);
+    setAuthError(null);
 
     try {
       const { data: user, error } = await supabase
-        .rpc('upsert_user_by_email', { input_email: email })
+        .rpc('upsert_user_by_token', { p_token: token })
         .single();
 
       if (error) throw error;
 
+      if (!user || !user.id) {
+        setAuthError('Auth error: ' + (error || 'Invalid token'));
+      }
+
       setUser(user);
       await loadProgress(user.id);
     } catch (error) {
-      console.error('Ошибка входа:', error);
+      console.error('Auth error:', error);
       setIsLoading(false);
+      setAuthError('Auth error: ' + (error || 'Invalid token'));
     }
   };
+
+  // --- ЛОГИКА ОПРОСА ---
 
   const loadProgress = async (userId) => {
     try {
@@ -107,43 +128,30 @@ export default function SurveyApp() {
 
   // --- РЕНДЕР ---
 
-  // 1. Экран авторизации
-  if (!user) {
+  // 1. Экран ошибки доступа
+  if (authError) {
     return (
-      <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 p-4">
-        <div className="bg-white p-8 rounded-2xl shadow-sm w-full max-w-md text-center">
-          <h2 className="text-2xl font-bold mb-6 text-gray-800">
-            {uiDict.loginTitle[lang]}
+      <div className="flex flex-col items-center justify-center min-h-screen bg-red-50 p-4">
+        <div className="bg-white p-8 rounded-2xl shadow-sm w-full max-w-md text-center border-2 border-red-100">
+          <div className="text-red-500 text-5xl mb-4">⚠️</div>
+          <h2 className="text-2xl font-bold mb-4 text-gray-800">
+            Access Denied
           </h2>
-          <form onSubmit={handleLogin} className="flex flex-col gap-4">
-            <input
-              type="email"
-              value={email}
-              autoComplete="email"
-              onChange={e => setEmail(e.target.value)}
-              placeholder={uiDict.emailPlaceholder[lang]}
-              className="border-2 border-gray-200 p-4 rounded-xl w-full text-lg focus:border-blue-500 outline-none transition-colors"
-            />
-            <button type="submit" className="bg-blue-600 text-white font-medium p-4 rounded-xl text-lg hover:bg-blue-700 transition-colors">
-              {uiDict.startSurvey[lang]}
-            </button>
-          </form>
-
-          {/* Переключатель языка на экране логина */}
-          <div className="flex justify-center gap-4 mt-6 text-sm font-semibold">
-            <button onClick={() => setLang('ru')} className={`pb-1 border-b-2 ${lang === 'ru' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-400'}`}>RU</button>
-            <button onClick={() => setLang('es')} className={`pb-1 border-b-2 ${lang === 'es' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-400'}`}>ES</button>
-            <button onClick={() => setLang('en')} className={`pb-1 border-b-2 ${lang === 'en' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-400'}`}>EN</button>
-            <button onClick={() => setLang('zh')} className={`pb-1 border-b-2 ${lang === 'zh' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-400'}`}>ZH</button>
-            <button onClick={() => setLang('hi')} className={`pb-1 border-b-2 ${lang === 'hi' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-400'}`}>HI</button>
-          </div>
-
+          <p className="text-gray-600 mb-6">
+            {authError}
+          </p>
+          <button
+            onClick={() => window.location.reload()}
+            className="bg-gray-800 text-white px-6 py-2 rounded-lg hover:bg-gray-900"
+          >
+            Try again
+          </button>
         </div>
       </div>
     );
   }
 
-  // 2. Экран загрузки (Лоадер)
+  // 2. Экран загрузки (Проверка токена)
   if (isLoading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-gray-50 p-4">
