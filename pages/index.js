@@ -32,7 +32,7 @@ export default function SurveyApp() {
       authenticateWithToken(token);
     } else {
       setIsLoading(false);
-      setAuthError('Access denied. Please, use your personal link.');
+      setAuthError('Auth error: Please, use your personal link.');
     }
   }, [router.isReady, router.query.token]);
 
